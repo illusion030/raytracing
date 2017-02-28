@@ -50,4 +50,4 @@ check: $(EXEC)
 
 clean:
 	$(RM) $(EXEC) $(OBJS) use-models.h \
-		out.ppm gmon.out
+		out.ppm gmon.out output.png
