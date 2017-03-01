@@ -12,7 +12,9 @@
 #define ROWS 512
 #define COLS 512
 
-#define OUT_FILE "8threads_rows_opt.txt"
+#define THREADS_NUM 512
+
+#define OUT_FILE "threads_opt.txt"
 
 static void write_to_ppm(FILE *outfile, uint8_t *pixels,
                          int width, int height)
@@ -55,42 +57,23 @@ int main()
     /* do the ray tracing with the given geometry */
     clock_gettime(CLOCK_REALTIME, &start);
 
-    pthread_t thread[8];
-    details *detail[8];
+    pthread_t thread[THREADS_NUM];
+    details *detail[THREADS_NUM];
 
-    for(i = 0; i < 8; i++)
-        detail[i] = malloc(sizeof(details)),
+    for(i = 0; i < THREADS_NUM; i++) {
+        detail[i] = malloc(sizeof(details));
+        insert_detail(pixels, background, rectangulars,
+                      spheres, lights, &view, ROWS, COLS,0,
+                      ROWS, COLS * i / THREADS_NUM,
+                      COLS * (i + 1) / THREADS_NUM,
+                      detail[i]);
+    }
 
-                    insert_detail(pixels, background, rectangulars, spheres,
-                                  lights, &view, ROWS, COLS, 0, ROWS / 4,
-                                  0, COLS, detail[0]);
-    insert_detail(pixels, background, rectangulars, spheres,
-                  lights, &view, ROWS, COLS, ROWS / 4,
-                  ROWS / 3, 0, COLS, detail[1]);
-    insert_detail(pixels, background, rectangulars, spheres,
-                  lights, &view, ROWS, COLS, ROWS / 3,
-                  ROWS * 5 / 12, 0, COLS, detail[2]);
-    insert_detail(pixels, background, rectangulars, spheres,
-                  lights, &view, ROWS, COLS, ROWS * 5 / 12,
-                  ROWS / 2, 0, COLS, detail[3]);
-    insert_detail(pixels, background, rectangulars, spheres,
-                  lights, &view, ROWS, COLS, ROWS / 2,
-                  ROWS * 7 / 12, 0, COLS, detail[4]);
-    insert_detail(pixels, background, rectangulars, spheres,
-                  lights, &view, ROWS, COLS, ROWS * 7 / 12,
-                  ROWS * 2 / 3, 0, COLS, detail[5]);
-    insert_detail(pixels, background, rectangulars, spheres,
-                  lights, &view, ROWS, COLS, ROWS * 2 / 3,
-                  ROWS * 3 / 4, 0, COLS, detail[6]);
-    insert_detail(pixels, background, rectangulars, spheres,
-                  lights, &view, ROWS, COLS, ROWS * 3 / 4, ROWS,
-                  0, COLS, detail[7]);
-
-    for(i = 0; i < 8; i++)
+    for(i = 0; i < THREADS_NUM; i++)
         pthread_create(&thread[i], NULL, &raytracing_thread,
                        (void *)detail[i]);
 
-    for(i = 0; i < 8; i++) {
+    for(i = 0; i < THREADS_NUM; i++) {
         pthread_join(thread[i], NULL);
         free(detail[i]);
     }
