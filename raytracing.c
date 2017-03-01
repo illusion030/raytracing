@@ -17,6 +17,7 @@
 /* @param t t distance
  * @return 1 means hit, otherwise 0
  */
+
 static int raySphereIntersection(const point3 ray_e,
                                  const point3 ray_d,
                                  const sphere *sph,
@@ -499,6 +500,7 @@ void raytracing(uint8_t *pixels, color background_color,
 
 void *raytracing_thread(void *args)
 {
+
     details *detail = (details *)args;
 
     point3 u, v, w, d;
@@ -539,6 +541,7 @@ void *raytracing_thread(void *args)
             }
         }
     }
+
     return NULL;
 }
 

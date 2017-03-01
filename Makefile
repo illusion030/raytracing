@@ -10,7 +10,7 @@ $(GIT_HOOKS):
 
 CC ?= gcc
 CFLAGS = \
-	-std=gnu99 -Wall -O3 -g
+	-std=gnu99 -Wall -O0 -g
 CFLAGS_common ?= -Wall -std=gnu99
 LDFLAGS = \
 	-lm
