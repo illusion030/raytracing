@@ -10,7 +10,8 @@ $(GIT_HOOKS):
 
 CC ?= gcc
 CFLAGS = \
-	-std=gnu99 -Wall -O0 -g
+	-std=gnu99 -Wall -O3 -g
+CFLAGS_common ?= -Wall -std=gnu99
 LDFLAGS = \
 	-lm
 
@@ -26,11 +27,11 @@ OBJS := \
 	main.o
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -pthread -c -o $@ $<
 
 
 $(EXEC): $(OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS)
+	$(CC) -pthread -o $@ $^ $(LDFLAGS)
 
 main.o: use-models.h
 use-models.h: models.inc Makefile
@@ -44,10 +45,23 @@ use-models.h: models.inc Makefile
 	        -e 's/rectangular[0-9]/(\&&, \&rectangulars);/g' \
 	        -e 's/ = {//g' >> use-models.h
 
+run: $(EXEC)
+	./$(EXEC)
+	convert out.ppm out.png
+
 check: $(EXEC)
 	@./$(EXEC) && diff -u baseline.ppm out.ppm || (echo Fail; exit)
 	@echo "Verified OK"
 
+calculate: calculate.c
+	$(CC) $(CFLAGS_common) $^ -o $@
+
+output.txt: calculate
+	./calculate
+
+plot: output.txt
+	gnuplot scripts/runtime.gp
+
 clean:
 	$(RM) $(EXEC) $(OBJS) use-models.h \
-		out.ppm gmon.out output.png
+		out.ppm gmon.out output.png out.png

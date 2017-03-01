@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <unistd.h>
 #include <time.h>
+#include <pthread.h>
 
 #include "primitives.h"
 #include "raytracing.h"
@@ -10,6 +12,8 @@
 
 #define ROWS 512
 #define COLS 512
+
+#define OUT_FILE "thread.txt"
 
 static void write_to_ppm(FILE *outfile, uint8_t *pixels,
                          int width, int height)
@@ -33,12 +37,14 @@ static double diff_in_second(struct timespec t1, struct timespec t2)
 
 int main()
 {
+    int i;
     uint8_t *pixels;
     light_node lights = NULL;
     rectangular_node rectangulars = NULL;
     sphere_node spheres = NULL;
     color background = { 0.0, 0.1, 0.1 };
     struct timespec start, end;
+    double exec_time;
 
 #include "use-models.h"
 
@@ -49,8 +55,35 @@ int main()
     printf("# Rendering scene\n");
     /* do the ray tracing with the given geometry */
     clock_gettime(CLOCK_REALTIME, &start);
-    raytracing(pixels, background,
-               rectangulars, spheres, lights, &view, ROWS, COLS);
+
+    pthread_t thread[4];
+    details *detail[4];
+
+    for(i = 0; i < 4; i++)
+        detail[i] = malloc(sizeof(details)),
+
+                    insert_detail(pixels, background, rectangulars, spheres,
+                                  lights, &view, ROWS, COLS, 0, ROWS / 2, 0,
+                                  COLS / 2, detail[0]);
+    insert_detail(pixels, background, rectangulars, spheres,
+                  lights, &view, ROWS, COLS, ROWS / 2, ROWS,
+                  0, COLS / 2, detail[1]);
+    insert_detail(pixels, background, rectangulars, spheres,
+                  lights, &view, ROWS, COLS, 0, ROWS / 2,
+                  COLS / 2, COLS, detail[2]);
+    insert_detail(pixels, background, rectangulars, spheres,
+                  lights, &view, ROWS, COLS, ROWS / 2, ROWS,
+                  COLS / 2, COLS, detail[3]);
+
+    for(i = 0; i < 4; i++)
+        pthread_create(&thread[i], NULL, &raytracing_thread,
+                       (void *)detail[i]);
+
+    for(i = 0; i < 4; i++) {
+        pthread_join(thread[i], NULL);
+        free(detail[i]);
+    }
+
     clock_gettime(CLOCK_REALTIME, &end);
     {
         FILE *outfile = fopen(OUT_FILENAME, "wb");
@@ -62,7 +95,15 @@ int main()
     delete_sphere_list(&spheres);
     delete_light_list(&lights);
     free(pixels);
+
+    exec_time = diff_in_second(start, end);
+
     printf("Done!\n");
-    printf("Execution time of raytracing() : %lf sec\n", diff_in_second(start, end));
+    printf("Execution time of raytracing() : %lf sec\n", exec_time);
+
+    FILE *output = fopen(OUT_FILE, "a");
+    fprintf(output, "time %lf\n", exec_time);
+    fclose(output);
+
     return 0;
 }
