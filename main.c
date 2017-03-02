@@ -14,7 +14,7 @@
 
 #define THREADS_NUM 512
 
-#define OUT_FILE "threads_opt.txt"
+#define OUT_FILE "inline.txt"
 
 static void write_to_ppm(FILE *outfile, uint8_t *pixels,
                          int width, int height)
@@ -53,10 +53,6 @@ int main()
     pixels = malloc(sizeof(unsigned char) * ROWS * COLS * 3);
     if (!pixels) exit(-1);
 
-    printf("# Rendering scene\n");
-    /* do the ray tracing with the given geometry */
-    clock_gettime(CLOCK_REALTIME, &start);
-
     pthread_t thread[THREADS_NUM];
     details *detail[THREADS_NUM];
 
@@ -68,6 +64,10 @@ int main()
                       COLS * (i + 1) / THREADS_NUM,
                       detail[i]);
     }
+
+    printf("# Rendering scene\n");
+    /* do the ray tracing with the given geometry */
+    clock_gettime(CLOCK_REALTIME, &start);
 
     for(i = 0; i < THREADS_NUM; i++)
         pthread_create(&thread[i], NULL, &raytracing_thread,
